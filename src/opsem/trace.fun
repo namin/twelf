@@ -25,7 +25,7 @@ struct
     fun headToString (G, I.Const (c)) = N.qidToString (N.constQid c)
       | headToString (G, I.Def (d)) = N.qidToString (N.constQid d)
       | headToString (G, I.BVar(k)) = N.bvarName (G, k)
-    fun expToString (GU) = P.expToString (GU) ^ ". "
+    fun expToString (GU as (G, U)) = (Int.toString (N.depthExp (G, U))) ^ " " ^ P.expToString (GU) ^ ". "
     fun decToString (GD) = P.decToString (GD) ^ ". "
     fun eqnToString (G, U1, U2) =
           P.expToString (G, U1) ^ " = " ^ P.expToString (G, U2) ^ ". "
@@ -210,6 +210,9 @@ struct
     | Unify of (IntSyn.Head * IntSyn.Head) * IntSyn.Exp * IntSyn.Exp (* clause head == goal *)
     | FailUnify of (IntSyn.Head * IntSyn.Head) * string (* failure message *)
 
+    | StopMaxDepth
+    | StopMaxSize of IntSyn.Exp
+
     fun eventToString (G, IntroHyp (_, D)) =
         "% Introducing hypothesis\n" ^ decToString (G, D)
       | eventToString (G, DischargeHyp (_, I.Dec (SOME(x), _))) =
@@ -244,6 +247,11 @@ struct
       | eventToString (G, FailUnify ((Hc, Ha), msg)) =
         "% Unification failed with clause " ^ headToString (G, Hc) ^ ":\n"
         ^ msg
+
+      | eventToString (G, StopMaxDepth) =
+        "% Give up here because max depth reached"
+      | eventToString (G, StopMaxSize(V)) =
+        "% Give up here because max size surpassed with " ^ (Int.toString (N.depthExp (G, V)))
 
     fun traceEvent (G, e) = print (eventToString (G, e))
 

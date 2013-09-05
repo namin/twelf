@@ -3,7 +3,7 @@
 (* Modified: Jeff Polakow *)
 
 functor Names (structure Global : GLOBAL
-               (*! structure IntSyn' : INTSYN !*)
+               (* structure IntSyn' : INTSYN !*)
                structure Constraints : CONSTRAINTS
                (*! sharing Constraints.IntSyn = IntSyn' !*)
                structure HashTable : TABLE where type key = string
@@ -955,6 +955,53 @@ struct
 
     val namedEVars = namedEVars
     val evarCnstr = evarCnstr
+
+
+    structure I = IntSyn
+                      
+    fun subToSpine (depth, s) =
+      let fun sTS (I.Shift(k), S) =
+              if k < depth
+              then sTS (I.Dot (I.Idx (k+1), I.Shift(k+1)), S)
+              else (* k >= depth *) S
+            | sTS (I.Dot(I.Idx(k), s), S) =
+              (* Eta violation, but probably inconsequential -kw *)
+              sTS (s, I.App(I.Root(I.BVar(k), I.Nil), S))
+            | sTS (I.Dot(I.Exp(U), s), S) =
+              sTS (s, I.App(U, S))
+      in
+          sTS (s, I.Nil)
+      end
+    fun depthEVar (G, X) = (evarName(G, X); 0)
+    fun depthExpS (G, (U, s)) = depthExpW (G, Whnf.whnf (U, s))
+    and depthExpW (G, (I.Uni(L), s)) = 0
+      | depthExpW (G, (I.Pi((D,_), V), s)) = depthExpW (I.Decl(G, D), (V, I.dot1 s))
+      | depthExpW (G, (I.Root(C, S), s)) = Int.max(depthCon(G, C), depthSpine (G, (S, s)))
+      | depthExpW (G, (X as I.EVar _, s))  = Int.max(depthEVar(G, X), depthSpine (G, ((subToSpine(I.ctxLength(G), s)), s)))
+      | depthExpW (G, ((I.EClo (V, s)), _)) = depthExpW (G, (V, s))
+    and depthCon (G, I.BVar(n)) = (bvarName(G, n); 0)
+      | depthCon (G, I.Const(cid)) = 0
+      | depthCon (G, C) = 0
+    and depthSpine (G, (I.Nil, _)) = 0
+      | depthSpine (G, (I.SClo (S, s'), s)) = depthSpine (G, (S, I.comp(s',s)))
+      | depthSpine (G, (I.App(U, S), s)) = Int.max(1+depthExpS (G, (U, s)), depthSpine (G, (S, s)))
+
+    val depthExp = fn (G, U) => depthExpS (G, (U, I.id))
+
+    fun bdepthEVar (d,b) (G, X) = (evarName(G, X); d>=b)
+    fun bdepthExpS (d,b) (G, (U, s)) = bdepthExpW (d,b) (G, Whnf.whnf (U, s))
+    and bdepthExpW (d,b) (G, (I.Uni(L), s)) = d>=b
+      | bdepthExpW (d,b) (G, (I.Pi((D,_), V), s)) = d>=b andalso (bdepthExpW (d,b) (I.Decl(G, D), (V, I.dot1 s)))
+      | bdepthExpW (d,b) (G, (I.Root(C, S), s)) = d>=b andalso (bdepthCon (d,b) (G, C)) andalso (bdepthSpine (d,b) (G, (S, s)))
+      | bdepthExpW (d,b) (G, (X as I.EVar _, s))  = d>=b andalso (bdepthEVar (d,b) (G, X)) andalso (bdepthSpine (d,b) (G, ((subToSpine(I.ctxLength(G), s)), s)))
+      | bdepthExpW (d,b) (G, ((I.EClo (V, s)), _)) = d>=b andalso (bdepthExpW (d,b) (G, (V, s)))
+    and bdepthCon (d,b) (G, I.BVar(n)) = (bvarName(G, n); d>=b)
+      | bdepthCon (d,b) (G, I.Const(cid)) = d>=b
+      | bdepthCon (d,b) (G, C) = d>=b
+    and bdepthSpine (d,b) (G, (I.Nil, _)) = d>=b
+      | bdepthSpine (d,b) (G, (I.SClo (S, s'), s)) = d>=b andalso (bdepthSpine (d,b) (G, (S, I.comp(s',s))))
+      | bdepthSpine (d,b) (G, (I.App(U, S), s)) = d>=b andalso (bdepthExpS (d,b+1) (G, (U, s))) andalso (bdepthSpine (d,b) (G, (S, s)))
+    val depthExpBoundedBy = fn d => fn (G, U) => bdepthExpS (d,0) (G, (U, I.id))
 
   end  (* local varTable ... *)
 

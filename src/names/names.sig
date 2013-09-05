@@ -121,4 +121,8 @@ sig
   val namedEVars : unit -> (IntSyn.Exp * string) list
   (* Uninstantiated named EVars with constraints *)
   val evarCnstr : unit -> (IntSyn.Exp * string) list
+
+  val depthExp: IntSyn.dctx * IntSyn.Exp -> int
+  val depthExpBoundedBy: int -> IntSyn.dctx * IntSyn.Exp -> bool
+
 end;  (* signature NAMES *)

@@ -9,7 +9,8 @@ sig
   (*! structure IntSyn : INTSYN !*)
   (*! structure CompSyn : COMPSYN !*)
 
-  val solve     : (CompSyn.Goal * IntSyn.Sub) * CompSyn.DProg
+  val solve     : (int option * int option)
+                  -> (CompSyn.Goal * IntSyn.Sub) * CompSyn.DProg
                   * (IntSyn.Exp -> unit) -> unit
 
 end;  (* signature ABSMACHINE *)

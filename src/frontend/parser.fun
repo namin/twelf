@@ -63,6 +63,7 @@ struct
     | EstablishDec of ThmExtSyn.establish
     | AssertDec of ThmExtSyn.assert
     | Query of int option * int option * ExtQuery.query (* expected, try, A *)
+    | DQuery of int option * int option * int option * int option * ExtQuery.query (* depth, size, expected, try, A *)
     | FQuery of ExtQuery.query (* expected, try, A *)
     | Compile of Names.Qid list (* -ABP 4/4/03 *)
     | Querytabled of int option * int option * ExtQuery.query        (* numSol, try, A *)
@@ -164,6 +165,17 @@ struct
           val r = Paths.join (r0, r')
         in
           Stream.Cons ((Query (expected, try, query), r), parseStream (stripDot f3, sc))
+        end
+      | parseStream' (LS.Cons((L.DQUERY, r0), s'), sc) =
+        let
+          val (depth, s0) = parseBound' (LS.expose s')
+          val (size, s0') = parseBound' (LS.expose s0)
+          val (expected, s1) = parseBound' (LS.expose s0')
+          val (try, s2) = parseBound' (LS.expose s1)
+          val (query, f3 as LS.Cons((_,r'),_)) = ParseQuery.parseQuery' (LS.expose s2)
+          val r = Paths.join (r0, r')
+        in
+          Stream.Cons ((DQuery (depth, size, expected, try, query), r), parseStream (stripDot f3, sc))
         end
       | parseStream' (LS.Cons((L.FQUERY, r0), s'), sc) =
         let

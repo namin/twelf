@@ -26,6 +26,9 @@ sig
   | Unify of (IntSyn.Head * IntSyn.Head) * IntSyn.Exp * IntSyn.Exp (* clause head == goal *)
   | FailUnify of (IntSyn.Head * IntSyn.Head) * string (* failure message *)
 
+  | StopMaxDepth
+  | StopMaxSize of IntSyn.Exp
+
   val signal : IntSyn.dctx * Event -> unit
   val init : unit -> unit		(* initialize trace, break and tag *)
 

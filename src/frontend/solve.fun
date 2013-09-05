@@ -156,14 +156,14 @@ struct
      error messages and finally returning the status (either OK or
      ABORT).
   *)
-  fun solve' (defines, solve, Paths.Loc (fileName, r)) =
+  fun solve' kw (depth, size) (defines, solve, Paths.Loc (fileName, r)) =
       let
         val (A, finish) = (* self timing *)
               ReconQuery.solveToSolve (defines, solve, Paths.Loc (fileName, r))
 
         (* echo declaration, according to chatter level *)
         val _ = if !Global.chatter >= 3
-                  then Msg.message ("%solve ")
+                  then Msg.message ("%" ^ kw ^ " ")
                 else ()
         val _ = if !Global.chatter >= 3
                   then Msg.message ("\n"
@@ -173,7 +173,7 @@ struct
                 else ()
         val g = (Timers.time Timers.compiling Compile.compileGoal)
                     (IntSyn.Null, A)
-        fun search () = AbsMachine.solve
+        fun search () = AbsMachine.solve (depth, size)
                           ((g, IntSyn.id), CompSyn.DProg (IntSyn.Null, IntSyn.Null),
                            fn M => raise Solution M)
       in
@@ -243,18 +243,22 @@ struct
          and reconstructs the proof term X afterwards - bp
        *)
       Compile.Indexing => solveSbt args
-    | Compile.LinearHeads => solve' args
-    | _ => solve' args
+    | Compile.LinearHeads => solve' "solve" (NONE, NONE) args
+    | _ => solve' "solve" (NONE, NONE) args
 
 
   (* %query <expected> <try> A or %query <expected> <try> X : A *)
-  fun query' ((expected, try, quy), Paths.Loc (fileName, r)) =
+  (* %dquery <depth> <size> <expected> <try> A or ... *)
+  fun query' kw (depth, size) ((expected, try, quy), Paths.Loc (fileName, r)) =
     let
       (* optName = SOME(X) or NONE, Xs = free variables in query excluding X *)
       val (A, optName, Xs) = ReconQuery.queryToQuery(quy, Paths.Loc (fileName, r))
       (* times itself *)
       val _ = if !Global.chatter >= 3
-                then Msg.message ("%query " ^ boundToString expected
+                then Msg.message ("%" ^ kw
+                                  ^ boundToString depth
+                            ^ " " ^ boundToString size
+                            ^ " " ^ boundToString expected
                             ^ " " ^ boundToString try ^ "\n")
               else ()
       val _ = if !Global.chatter >= 4
@@ -310,7 +314,7 @@ struct
                      then raise Done
                    else ())
 
-        fun search () = AbsMachine.solve
+        fun search () = AbsMachine.solve (depth,size)
                          ((g,IntSyn.id), CompSyn.DProg (IntSyn.Null, IntSyn.Null),
                           scInit)
               in
@@ -446,9 +450,9 @@ struct
             it will be reconstructed after the query A has succeeded - bp
           *)
       Compile.Indexing => querySbt args
-    | Compile.LinearHeads => query' args
-    | _ => query' args
-
+    | Compile.LinearHeads => query' "query" (NONE,NONE) args
+    | _ => query' "query" (NONE,NONE) args
+  fun dquery ((depth, size, expected, try, quy), Paths.Loc (fileName, r)) = query' "dquery" (depth, size) ((expected, try, quy), Paths.Loc (fileName, r))
 
  (* %querytabled <expected solutions> <max stages tried>  A
 or  %querytabled <expected solutions> <max stages tried>  X : A
@@ -668,7 +672,7 @@ or  %querytabled <expected solutions> <max stages tried>  X : A
                   then Msg.message "Solving...\n"
                 else ()
       in
-        ((Timers.time Timers.solving AbsMachine.solve)
+        ((Timers.time Timers.solving (AbsMachine.solve (NONE, NONE)))
          ((g,IntSyn.id), CompSyn.DProg (IntSyn.Null, IntSyn.Null), scInit); (* scInit is timed into solving! *)
          Msg.message "No more solutions\n")
         handle Done => ();

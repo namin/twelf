@@ -1,0 +1,56 @@
+%% original code in minikanren developed by Will Byrd
+%% ported to Twelf by Nada Amin
+
+exp: type. %name exp U.
+s: exp.
+k: exp.
+app: exp -> exp -> exp.
+
+contracto: exp -> exp -> type.
+contracto/k: contracto (app (app k U^) Y) U^.
+contracto/s: contracto (app (app (app s X) Y) Z) (app (app X Z) (app Y Z)).
+
+
+1wo: exp -> exp -> type.
+1wo/contracto: 1wo U U^ <- contracto U U^.
+1wo/1: 1wo (app V1 V2) (app V^ V2) <- 1wo V1 V^.
+1wo/2: 1wo (app V1 V2) (app V1 V^) <- 1wo V2 V^.
+
+
+wo: exp -> exp -> type.
+wo/id: wo U U.
+wo/step: wo U V <- 1wo U U^ <- wo U^ V.
+
+
+%abbrev i = (app (app s k) k).
+%abbrev b = (app (app s (app k s)) k).
+%abbrev c = (app (app s (app (app b b) s)) (app k k)).
+%abbrev q1 = (app (app s (app s (app s k))) (app (app s k) k)).
+%abbrev q2 = (app (app s (app k (app s i))) k).
+%abbrev f0 = (app (app s (app s (app k (app s i)))) i).
+%abbrev f = (app f0 f0).
+
+%.
+
+%query 1 1 {alpha} wo (app q1 alpha) (app alpha alpha).
+%dquery 6 * 1 1 {alpha} wo (app q1 alpha) (app alpha alpha).
+%dquery 6 6 1 1 {alpha} wo (app q1 alpha) (app alpha alpha).
+%dquery 6 * 1 1 {alpha} wo (app Q alpha) (app alpha alpha).
+%dquery 6 100 1 1 {alpha} wo (app Q alpha) (app alpha alpha).
+
+%query 1 1 {alpha}{beta} wo (app (app q2 alpha) beta) (app beta alpha).
+%dquery 7 * 1 1 {alpha}{beta} wo (app (app q2 alpha) beta) (app beta alpha).
+%dquery 7 9 1 1 {alpha}{beta} wo (app (app q2 alpha) beta) (app beta alpha).
+%dquery 7 * 1 1 {alpha}{beta} wo (app (app Q alpha) beta) (app beta alpha).
+%dquery 7 100 1 1 {alpha}{beta} wo (app (app Q alpha) beta) (app beta alpha).
+
+%query 1 1 wo (app (app (app b X) Y) Z) (app X (app Y Z)).
+% -- Here's how we show that it works _forall_ X, Y, Z
+%query 1 1 {X}{Y}{Z} wo (app (app (app b X) Y) Z) (app X (app Y Z)).
+
+%dquery 9 * 1 1 {X} wo (app f X) (app X (app f X)).
+%dquery 9 12 1 1 {X} wo (app f X) (app X (app f X)).
+%dquery 9 15 1 1 {X} wo (app F X) (app X (app F X)).
+% Give it a hint...
+%dquery 9 12 1 1 {X} wo (app (app f0 f0) X) (app X (app (app f0 f0) X)).
+%dquery 9 12 1 1 {X} wo (app (app F0 F0) X) (app X (app (app F0 F0) X)).

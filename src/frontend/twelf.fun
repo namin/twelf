@@ -565,6 +565,12 @@ struct
         (Solve.query ((expected, try, query), Paths.Loc (fileName, r))
          handle Solve.AbortQuery (msg)
                 => raise Solve.AbortQuery (Paths.wrap (r, msg)))
+      (* %dquery <depth> <size> <expected> <try> A or %dquery <depth> <expected> <try> X : A *)
+      | install1 (fileName, (Parser.DQuery(bound, size, expected,try,query), r)) =
+        (* Solve.query might raise Solve.AbortQuery (msg) *)
+        (Solve.dquery ((bound, size, expected, try, query), Paths.Loc (fileName, r))
+         handle Solve.AbortQuery (msg)
+                => raise Solve.AbortQuery (Paths.wrap (r, msg)))
       (* %fquery <expected> <try> A or %fquery <expected> <try> X : A *)
       | install1 (fileName, (Parser.FQuery (query), r)) =
         (* Solve.query might raise Fquery.AbortQuery (msg) *)

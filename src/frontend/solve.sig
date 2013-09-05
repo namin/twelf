@@ -15,6 +15,9 @@ sig
   val query : (int option * int option * ExtQuery.query) * Paths.location -> unit
 					(* may raise AbortQuery(msg) *)
 
+  val dquery : (int option * int option * int option * int option * ExtQuery.query) * Paths.location -> unit
+					(* may raise AbortQuery(msg) *)
+
   val querytabled : (int option * int option * ExtQuery.query) * Paths.location -> unit
 					(* may raise AbortQuery(msg) *)
 
