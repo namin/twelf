@@ -34,6 +34,7 @@ RUN apt-get install -y mlton-compiler
 #
 #### Install from binary ####
 RUN  cd /code;\
-     wget -nv http://twelf.plparty.org/releases/twelf-linux-1.7.1.tar.gz;\
-     tar -xf twelf-linux-1.7.1.tar.gz;\
-     cp twelf/bin/twelf-server /usr/local/bin
+     mkdir twelf;\
+     wget -nv http://lampwww.epfl.ch/~amin/dkr/twelf/twelf-server;\
+     chmod 755 twelf-server;\
+     cp twelf-server /usr/local/bin
